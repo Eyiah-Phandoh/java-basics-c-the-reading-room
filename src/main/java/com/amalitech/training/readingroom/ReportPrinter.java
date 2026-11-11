@@ -1,6 +1,8 @@
 package com.amalitech.training.readingroom;
 
 import java.io.PrintStream;
+import java.time.LocalDate;
+import java.util.List;
 
 /**
  * Renders the end-of-day report. Kept separate from {@link Library} so the console format
@@ -23,6 +25,25 @@ public final class ReportPrinter {
             if (loan.isActive()) {
                 out.println("  Loan #" + loan.id() + ": \"" + loan.item().title() + "\" -> " + loan.member().name());
             }
+        }
+    }
+
+    /**
+     * Prints the optional overdue section without changing the regular end-of-day report.
+     */
+    public void printOverdue(Library library, LocalDate asOf, PrintStream out) {
+        List<Loan> overdue = library.overdueLoans(asOf);
+        out.println();
+        out.println("=== " + library.name() + " - overdue items (as of " + asOf + ") ===");
+        if (overdue.isEmpty()) {
+            out.println("No overdue loans.");
+            return;
+        }
+        for (Loan loan : overdue) {
+            long days = loan.daysOverdue(asOf);
+            String unit = days == 1 ? "day" : "days";
+            out.println("  Loan #" + loan.id() + ": \"" + loan.item().title() + "\" -> " + loan.member().name()
+                    + " (due " + loan.dueDate() + ", " + days + " " + unit + " overdue)");
         }
     }
 }

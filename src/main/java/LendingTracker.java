@@ -5,6 +5,8 @@ import com.amalitech.training.readingroom.Library;
 import com.amalitech.training.readingroom.Member;
 import com.amalitech.training.readingroom.MemberKind;
 
+import java.util.Arrays;
+
 // The Reading Room - community library lending tracker
 // Run it first to see the sort of thing they are worried about, and look closely
 // at the items and active loans in the end-of-day report.
@@ -33,5 +35,9 @@ public class LendingTracker {
         }
 
         lib.printReport();
+
+        if (Arrays.asList(args).contains("--overdue")) {
+            lib.printOverdueReport();
+        }
     }
 }

@@ -1,4 +1,5 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -8,18 +9,8 @@ import org.junit.jupiter.api.Test;
 class LendingTrackerTest {
 
     @Test
-    void demoRefusesSecondLoanAndPrintsTheExpectedReport() throws Exception {
-        PrintStream original = System.out;
-        ByteArrayOutputStream captured = new ByteArrayOutputStream();
-
-        try (PrintStream replacement = new PrintStream(captured, true, StandardCharsets.UTF_8)) {
-            System.setOut(replacement);
-            try {
-                LendingTracker.main(new String[0]);
-            } finally {
-                System.setOut(original);
-            }
-        }
+    void demoRefusesSecondLoanAndPrintsTheExpectedReport() {
+        String output = runDemo();
 
         String nl = System.lineSeparator();
         String expected = "Lent \"Things Fall Apart\" to Kofi Mensah for 14 days" + nl
@@ -34,6 +25,30 @@ class LendingTrackerTest {
                 + "Active loans:" + nl
                 + "  Loan #1: \"Things Fall Apart\" -> Kofi Mensah" + nl;
 
-        assertEquals(expected, captured.toString(StandardCharsets.UTF_8));
+        assertEquals(expected, output);
+    }
+
+    @Test
+    void overdueFlagAddsTheOptionalSection() {
+        String output = runDemo("--overdue");
+
+        assertTrue(output.contains("=== The Reading Room - overdue items (as of "));
+        assertTrue(output.contains("No overdue loans."));
+    }
+
+    private String runDemo(String... args) {
+        PrintStream original = System.out;
+        ByteArrayOutputStream captured = new ByteArrayOutputStream();
+
+        try (PrintStream replacement = new PrintStream(captured, true, StandardCharsets.UTF_8)) {
+            System.setOut(replacement);
+            try {
+                LendingTracker.main(args);
+            } finally {
+                System.setOut(original);
+            }
+        }
+
+        return captured.toString(StandardCharsets.UTF_8);
     }
 }

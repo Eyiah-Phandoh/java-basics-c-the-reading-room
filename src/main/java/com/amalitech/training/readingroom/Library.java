@@ -1,6 +1,8 @@
 package com.amalitech.training.readingroom;
 
 import java.io.PrintStream;
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -21,6 +23,7 @@ public final class Library {
     private final Map<LendingItem, Loan> activeLoans = new IdentityHashMap<>();
     private final LoanPolicy loanPolicy;
     private final PrintStream out;
+    private final Clock clock;
     private final ReportPrinter reportPrinter = new ReportPrinter();
 
     private int nextItemId = 1;
@@ -28,17 +31,22 @@ public final class Library {
     private int nextLoanId = 1;
 
     public Library(String name) {
-        this(name, new LoanPolicy(), System.out);
+        this(name, new LoanPolicy(), System.out, Clock.systemDefaultZone());
     }
 
     public Library(String name, PrintStream out) {
-        this(name, new LoanPolicy(), out);
+        this(name, new LoanPolicy(), out, Clock.systemDefaultZone());
     }
 
     public Library(String name, LoanPolicy loanPolicy, PrintStream out) {
+        this(name, loanPolicy, out, Clock.systemDefaultZone());
+    }
+
+    public Library(String name, LoanPolicy loanPolicy, PrintStream out, Clock clock) {
         this.name = Validation.requireText(name, "name");
         this.loanPolicy = Objects.requireNonNull(loanPolicy, "loanPolicy must not be null");
         this.out = Objects.requireNonNull(out, "out must not be null");
+        this.clock = Objects.requireNonNull(clock, "clock must not be null");
     }
 
     public String name() {
@@ -76,7 +84,7 @@ public final class Library {
         }
 
         int loanDays = loanPolicy.daysFor(item.type(), member.kind());
-        Loan loan = new Loan(nextLoanId++, member, item, loanDays);
+        Loan loan = new Loan(nextLoanId++, member, item, loanDays, LocalDate.now(clock));
 
         loans.add(loan);
         member.recordBorrow(loan);
@@ -111,6 +119,14 @@ public final class Library {
         return Optional.ofNullable(activeLoans.get(item));
     }
 
+    /**
+     * Returns active loans whose due date is before {@code asOf}, in loan order.
+     */
+    public List<Loan> overdueLoans(LocalDate asOf) {
+        Objects.requireNonNull(asOf, "asOf must not be null");
+        return loans.stream().filter(loan -> loan.isOverdue(asOf)).toList();
+    }
+
     public List<LendingItem> items() {
         return List.copyOf(items);
     }
@@ -125,6 +141,13 @@ public final class Library {
 
     public void printReport() {
         reportPrinter.print(this, out);
+    }
+
+    /**
+     * Prints the optional overdue report as of the library's current date.
+     */
+    public void printOverdueReport() {
+        reportPrinter.printOverdue(this, LocalDate.now(clock), out);
     }
 
     private void requireRegisteredMember(Member member) {
