@@ -54,13 +54,15 @@ public final class Library {
     }
 
     public LendingItem addItem(String title, ItemType type) {
-        LendingItem item = new LendingItem(nextItemId++, title, type);
+        LendingItem item = new LendingItem(nextItemId, title, type);
+        nextItemId++;
         items.add(item);
         return item;
     }
 
     public Member addMember(String name, MemberKind kind) {
-        Member member = new Member(nextMemberId++, name, kind);
+        Member member = new Member(nextMemberId, name, kind);
+        nextMemberId++;
         members.add(member);
         return member;
     }
