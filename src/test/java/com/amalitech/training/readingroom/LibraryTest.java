@@ -73,6 +73,15 @@ class LibraryTest {
     }
 
     @Test
+    void rejectedAddDoesNotConsumeAnId() {
+        assertThrows(IllegalArgumentException.class, () -> library.addItem("  ", ItemType.BOOK));
+        assertThrows(NullPointerException.class, () -> library.addMember(null, MemberKind.STANDARD));
+
+        assertEquals(1, library.addItem("Book", ItemType.BOOK).id());
+        assertEquals(1, library.addMember("Member", MemberKind.STANDARD).id());
+    }
+
+    @Test
     void returnsOnlyTheCopyThatWasReturnedWhenTitlesRepeat() {
         LendingItem copyA = library.addItem("Dune", ItemType.BOOK);
         LendingItem copyB = library.addItem("Dune", ItemType.BOOK);
