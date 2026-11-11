@@ -110,7 +110,7 @@ classDiagram
         +addMember(String, MemberKind) Member
         +borrow(Member, LendingItem) Loan
         +returnItem(LendingItem)
-        +printReport(PrintStream)
+        +printReport()
     }
 
     class LendingItem {
@@ -123,7 +123,7 @@ classDiagram
         -int id
         -String name
         -MemberKind kind
-        -List~String~ history
+        -List~Loan~ history
     }
 
     class Loan {
