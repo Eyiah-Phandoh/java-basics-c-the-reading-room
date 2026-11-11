@@ -1,7 +1,9 @@
+import com.amalitech.training.readingroom.ItemType;
 import com.amalitech.training.readingroom.ItemUnavailableException;
 import com.amalitech.training.readingroom.LendingItem;
 import com.amalitech.training.readingroom.Library;
 import com.amalitech.training.readingroom.Member;
+import com.amalitech.training.readingroom.MemberKind;
 
 // The Reading Room - community library lending tracker
 // Run it first to see the sort of thing they are worried about, and look closely
@@ -12,11 +14,11 @@ public class LendingTracker {
     public static void main(String[] args) {
         Library lib = new Library("The Reading Room");
 
-        LendingItem novel = lib.addItem("Things Fall Apart", "BOOK");
-        LendingItem audioCourse = lib.addItem("French Audio Course", "AUDIO_KIT");
+        LendingItem novel = lib.addItem("Things Fall Apart", ItemType.BOOK);
+        LendingItem audioCourse = lib.addItem("French Audio Course", ItemType.AUDIO_KIT);
 
-        Member kofi = lib.addMember("Kofi Mensah", "STANDARD");
-        Member ama = lib.addMember("Ama Owusu", "STUDENT");
+        Member kofi = lib.addMember("Kofi Mensah", MemberKind.STANDARD);
+        Member ama = lib.addMember("Ama Owusu", MemberKind.STUDENT);
 
         // a normal afternoon
         lib.borrow(kofi, novel);

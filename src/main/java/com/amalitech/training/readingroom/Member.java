@@ -2,6 +2,7 @@ package com.amalitech.training.readingroom;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * A library member. Identity is assigned by the owning {@link Library}.
@@ -10,13 +11,13 @@ public final class Member {
 
     private final int id;
     private final String name;
-    private final String kind;
+    private final MemberKind kind;
     private final List<Loan> history = new ArrayList<>();
 
-    Member(int id, String name, String kind) {
+    Member(int id, String name, MemberKind kind) {
         this.id = id;
-        this.name = name;
-        this.kind = kind;
+        this.name = Validation.requireText(name, "name");
+        this.kind = Objects.requireNonNull(kind, "kind must not be null");
     }
 
     public int id() {
@@ -27,7 +28,7 @@ public final class Member {
         return name;
     }
 
-    public String kind() {
+    public MemberKind kind() {
         return kind;
     }
 

@@ -9,7 +9,7 @@ public final class Loan {
     private final Member member;
     private final LendingItem item;
     private final int loanDays;
-    private String status = "ACTIVE";
+    private LoanStatus status = LoanStatus.ACTIVE;
 
     Loan(int id, Member member, LendingItem item, int loanDays) {
         this.id = id;
@@ -34,15 +34,18 @@ public final class Loan {
         return loanDays;
     }
 
-    public String status() {
+    public LoanStatus status() {
         return status;
     }
 
     public boolean isActive() {
-        return "ACTIVE".equals(status);
+        return status == LoanStatus.ACTIVE;
     }
 
     void markReturned() {
-        this.status = "RETURNED";
+        if (status == LoanStatus.RETURNED) {
+            throw new IllegalStateException("Loan #" + id + " is already returned");
+        }
+        this.status = LoanStatus.RETURNED;
     }
 }

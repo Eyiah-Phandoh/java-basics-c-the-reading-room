@@ -1,5 +1,7 @@
 package com.amalitech.training.readingroom;
 
+import java.util.Objects;
+
 /**
  * A physical item that can be lent by a library.
  *
@@ -11,12 +13,12 @@ public final class LendingItem {
 
     private final int id;
     private final String title;
-    private final String type;
+    private final ItemType type;
 
-    LendingItem(int id, String title, String type) {
+    LendingItem(int id, String title, ItemType type) {
         this.id = id;
-        this.title = title;
-        this.type = type;
+        this.title = Validation.requireText(title, "title");
+        this.type = Objects.requireNonNull(type, "type must not be null");
     }
 
     public int id() {
@@ -27,7 +29,7 @@ public final class LendingItem {
         return title;
     }
 
-    public String type() {
+    public ItemType type() {
         return type;
     }
 }
