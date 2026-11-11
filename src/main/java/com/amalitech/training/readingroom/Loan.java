@@ -18,6 +18,9 @@ public final class Loan {
     private LoanStatus status = LoanStatus.ACTIVE;
 
     Loan(int id, Member member, LendingItem item, int loanDays, LocalDate borrowedOn) {
+        if (loanDays <= 0) {
+            throw new IllegalArgumentException("loanDays must be positive, was " + loanDays);
+        }
         this.id = id;
         this.member = member;
         this.item = item;
