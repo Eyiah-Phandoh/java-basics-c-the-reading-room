@@ -56,8 +56,8 @@ the same novel. It is now refused, and the report correctly keeps the novel with
 ```
 
 The suite covers every loan period, duplicate-title copies, returns by identity, refusal of
-a second loan, rejection of unregistered or invalid entities, read-only views, and the exact
-report format.
+a second loan, rejection of unregistered or invalid entities, read-only views, due dates and
+overdue calculations, and the exact report formats.
 
 ## Structure
 
@@ -67,10 +67,10 @@ report format.
 | `Library` | Aggregate root: owns items, members, loans, IDs, and the one-active-loan-per-item map. |
 | `LendingItem` | An immutable item identity: id, title, type. It stores no custody flag. |
 | `Member` | A member identity, kind, and read-only loan history. |
-| `Loan` | A loan linking a member and an item, with its period and status. |
+| `Loan` | A loan linking a member and an item, with its period, status, borrow date, and due date. |
 | `ItemType`, `MemberKind`, `LoanStatus` | Closed value sets replacing raw strings. |
 | `LoanPolicy` | The four loan-period rules in one place. |
-| `ReportPrinter` | Renders the end-of-day report from the library state. |
+| `ReportPrinter` | Renders the end-of-day and optional overdue reports from library state. |
 | `*Exception` | Clear refusals for unavailable items, invalid returns, and foreign entities. |
 
 Design rules that keep it safe to change:
@@ -153,6 +153,45 @@ The rebuild does not remove the need to decide the new period. It makes the comp
 tests point at that one decision, and keeps `Library`, the entities, and the report from
 drifting while it is made.
 
+## Improvement beyond the brief: overdue tracking
+
+The brief only requires loan periods; it does not ask the tracker to know which loans are
+late. That is the one substantive extra I added.
+
+Every `Loan` now records `borrowedOn` and derives `dueDate` from the agreed loan period.
+`Library.overdueLoans(asOf)` returns the active loans past that date, and running with
+`--overdue` prints a separate section:
+
+```bash
+./mvnw exec:java -Dexec.args="--overdue"
+```
+
+Illustrative output for a book due on 15 January:
+
+```text
+=== The Reading Room - overdue items (as of 2026-01-17) ===
+  Loan #1: "Things Fall Apart" -> Kofi Mensah (due 2026-01-15, 2 days overdue)
+```
+
+The normal end-of-day report and its output are unchanged; the extra section is opt-in. The
+demo borrows on the current day, so its overdue section correctly says `No overdue loans.`
+
+**Why it is worth adding:** the original stored only `loanDays`, an integer duration. It
+could not answer the question staff actually ask at the desk — "which items are late today?"
+— without someone re-keying borrow dates into a separate spreadsheet. The tracker now keeps
+that date as part of the loan, so the answer is available whenever it is needed.
+
+**Why the implementation is safe:** `Library` takes an injected `Clock`, so due-date logic
+is tested deterministically instead of depending on the wall clock. The overdue query is a
+read-only projection of the same active loans, so it cannot drift from custody. The overdue
+view is a separate method on `ReportPrinter`, so the console format did not leak into the
+lending aggregate.
+
+**For the next person:** fines, reminders, or a "due this week" view can be built on
+`Loan.dueDate()` and `Library.overdueLoans(...)` without changing the lending rules. A new
+item type automatically inherits due-date support because the period still comes from
+`LoanPolicy`.
+
 ## Other extension points
 
 - **New report section:** change `ReportPrinter` only; domain rules are untouched.
@@ -160,5 +199,5 @@ drifting while it is made.
   a test.
 - **New storage or UI:** add it around `Library`; the domain does not depend on the console.
 
-Out of scope for this rebuild: persistence, due dates, fines, concurrency, and borrowing
+Out of scope for this rebuild: persistence, fines, renewals, concurrency, and borrowing
 limits. The current program is intentionally an in-memory, single-run tracker.
