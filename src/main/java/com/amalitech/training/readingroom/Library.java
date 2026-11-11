@@ -21,6 +21,7 @@ public final class Library {
     private final Map<LendingItem, Loan> activeLoans = new IdentityHashMap<>();
     private final LoanPolicy loanPolicy;
     private final PrintStream out;
+    private final ReportPrinter reportPrinter = new ReportPrinter();
 
     private int nextItemId = 1;
     private int nextMemberId = 1;
@@ -123,21 +124,7 @@ public final class Library {
     }
 
     public void printReport() {
-        out.println();
-        out.println("=== " + name + " - end of day ===");
-        out.println("Items:");
-        for (LendingItem item : items) {
-            Loan activeLoan = activeLoans.get(item);
-            String status = activeLoan == null ? "AVAILABLE" : "ON_LOAN";
-            out.println("  \"" + item.title() + "\" (" + item.type() + "): " + status
-                    + (activeLoan != null ? " - with " + activeLoan.member().name() : ""));
-        }
-        out.println("Active loans:");
-        for (Loan loan : loans) {
-            if (loan.isActive()) {
-                out.println("  Loan #" + loan.id() + ": \"" + loan.item().title() + "\" -> " + loan.member().name());
-            }
-        }
+        reportPrinter.print(this, out);
     }
 
     private void requireRegisteredMember(Member member) {
