@@ -5,9 +5,8 @@
 The tracker works on the happy path, but its model does not enforce the one rule the
 library depends on: a physical item is either available or on exactly one loan. State is
 duplicated, publicly mutable, and keyed by display strings, so invalid records are easy to
-create and hard to notice. The rebuild keeps today's loan rules and messages, preserves the
-report's existing sections, and makes that invariant structural. One documented improvement
-appends an overdue section to the end-of-day report.
+create and hard to notice. The rebuild keeps today's loan rules, messages, and report
+format, and makes that invariant structural.
 
 ## Critical defects
 
@@ -207,8 +206,20 @@ src/
 
 - BOOK loans: 14 days standard, 28 days student.
 - AUDIO_KIT loans: 7 days standard, 14 days student.
-- Successful messages, the report's existing sections and layout, item/loan ordering, and
-  loan numbering.
-- The only intended changes: the demo's second borrow of *Things Fall Apart* is refused, so
-  the report shows the novel with Kofi rather than Ama; and an overdue section is appended
-  to the standard report.
+- Successful messages, report layout, item/loan ordering, and loan numbering.
+
+Baseline: `docs/original-output.txt` holds the original program's output, captured
+before any change. The rebuilt tracker matches it except where noted below.
+
+## Intentional behaviour changes
+
+| Original | Rebuild | Why |
+|---|---|---|
+| Second borrow of an item on loan succeeds | Refused with `ItemUnavailableException` | Defect 1 |
+| Returning an item that was never borrowed prints "Returned" | Throws `ItemNotOnLoanException` | Defect 3 |
+| Unknown type creates a 0-day loan | Impossible: types are enums | Defect 5 |
+| `Member.history` is `List<String>` ("Borrowed X") | `List<Loan>` | Strings could not be traced to a loan |
+| `new LendingItem(...)` then `lib.addItem(item)` | `lib.addItem(title, type)` | The library owns IDs and registration |
+| `getLoans()` | `loans()` (read-only copy) | Encapsulation |
+
+Added: due dates and overdue.
