@@ -82,14 +82,83 @@ Design rules that keep it safe to change:
   untouched.
 - IDs belong to a `Library` and start at 1, which keeps tests independent.
 
-## Extending it
+## Key design decisions
 
-- **New item type:** add a constant to `ItemType` and a branch to `LoanPolicy`. The
-  exhaustive `switch` will fail to compile until the rule is supplied.
-- **New member kind:** the same pattern in `MemberKind` and `LoanPolicy`.
+**`Library` owns custody instead of each item owning status flags.** The original stored
+`status` and `currentBorrower` on the item *and* `status` on the loan, so the two records
+could disagree. I kept one private `activeLoans` map and derive availability and the report
+from it. The trade-off is one extra lookup when printing; the gain is that "one loan per
+item" has a single place to be true.
+
+**Loans point at the real member and item, rather than copying names and titles.** The
+original matched returns by `itemTitle`, which made duplicate copies indistinguishable and
+broke when a title changed. References are slightly more work to serialise later, but they
+make identity explicit and make a return affect exactly one loan.
+
+**Enums and a `LoanPolicy` instead of strings and nested `if`s.** Strings made typos
+possible and allowed an unknown type to create a zero-day loan. The enums are closed, and
+the policy holds all four periods in one place. A new type still requires a code change, but
+the compiler refuses to build until its rule is supplied; a data-driven rule table would be
+more machinery than four rules warrant.
+
+**Validate first, mutate second.** Every check runs before the library changes anything, so
+a refused borrow or return leaves the records exactly as they were. The cost is that callers
+must handle a domain exception; only the entry point has to do that for the expected demo
+refusal.
+
+**Library-owned IDs and read-only views instead of static counters and public lists.** IDs
+are now local to a library and start at 1, so tests do not interfere with each other. Two
+libraries may both have item 1, which is correct for a local identity. Returning
+`List.copyOf(...)` costs a small copy, but no caller can mutate the library's records behind
+its back.
+
+**A separate `ReportPrinter`.** Report changes no longer risk touching lending rules, and
+the exact console format can be locked by a golden-output test. The trade-off is one more
+class and an injected `PrintStream`.
+
+**One item object is one physical copy.** This preserves the existing model: two copies of
+*Dune* are two `LendingItem` instances, so returning one cannot close the other's loan. A
+quantity field would be a different model and would change how the report is read; it is
+deliberately out of scope.
+
+## The change that is coming
+
+The brief's next change is a new item type (a new member kind follows the same route).
+
+In the rebuilt version, adding it is three deliberate steps:
+
+1. Add the constant to `ItemType`.
+2. Add its loan period to `LoanPolicy`. The nested `switch` is exhaustive, so the project
+   will not compile until the new rule exists.
+3. Add the period to `LoanPolicyTest`.
+
+Nothing else needs to change. `Library` asks the policy for the number of days and never
+branches on type. `Loan`, `Member`, and `ReportPrinter` use the enum generically, so the
+report shows the new type automatically. A new member kind is the same: one enum constant,
+one policy case, one test.
+
+The old version forced changes in several places:
+
+- `LendingItem`'s allowed-values comment and constructor data;
+- a new copy of the `if/else` block in `Library.borrow`, including its separate student-rate
+  branch and the status/borrower writes;
+- the demo setup;
+- and there was no compiler check or test to catch a mistake.
+
+A typo in the type string produced an active loan with 0 days while leaving the item
+`AVAILABLE`; a forgotten student branch silently used the standard period. Adding a member
+kind was worse: both the `BOOK` and `AUDIO_KIT` branches in `Library.borrow` needed editing.
+
+The rebuild does not remove the need to decide the new period. It makes the compiler and
+tests point at that one decision, and keeps `Library`, the entities, and the report from
+drifting while it is made.
+
+## Other extension points
+
 - **New report section:** change `ReportPrinter` only; domain rules are untouched.
 - **New lending rule:** keep it inside `Library` (or a small policy type) and cover it with
   a test.
+- **New storage or UI:** add it around `Library`; the domain does not depend on the console.
 
 Out of scope for this rebuild: persistence, due dates, fines, concurrency, and borrowing
 limits. The current program is intentionally an in-memory, single-run tracker.
