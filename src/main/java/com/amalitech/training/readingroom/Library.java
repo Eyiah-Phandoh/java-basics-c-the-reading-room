@@ -46,6 +46,10 @@ public final class Library {
     }
 
     public void borrow(Member member, LendingItem item) {
+        if (item.isOnLoan()) {
+            throw new ItemUnavailableException(item.title(), item.currentBorrower());
+        }
+
         int loanDays = 0;
         if (item.type().equals("BOOK")) {
             loanDays = 14;

@@ -1,3 +1,4 @@
+import com.amalitech.training.readingroom.ItemUnavailableException;
 import com.amalitech.training.readingroom.LendingItem;
 import com.amalitech.training.readingroom.Library;
 import com.amalitech.training.readingroom.Member;
@@ -23,7 +24,11 @@ public class LendingTracker {
         lib.returnItem(audioCourse);
 
         // ... and the sort of thing that worries them:
-        lib.borrow(ama, novel); // the novel is already out with Kofi, but nothing stops this
+        try {
+            lib.borrow(ama, novel); // the novel is already out with Kofi
+        } catch (ItemUnavailableException e) {
+            System.out.println(e.getMessage());
+        }
 
         lib.printReport();
     }
