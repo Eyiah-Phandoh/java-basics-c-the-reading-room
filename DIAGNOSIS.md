@@ -12,72 +12,53 @@ format, and makes that invariant structural.
 
 ### 1. An item can be on two loans at once
 
-**What happens:** `Library.borrow` never checks whether the item is already out. It
-overwrites `status` and `currentBorrower`, then appends a second active loan. The supplied
-demo does exactly this with *Things Fall Apart* (lines 24–29), producing loans #1 and #3
-for the same book.
+`Library.borrow` never checks whether the item is already out. It overwrites the borrower
+and adds a second active loan; the demo does this to *Things Fall Apart* (loans #1 and #3).
 
-**Root cause:** Availability is a mutable label stored on `LendingItem`, not an invariant
-owned by `Library`. `borrow` has no precondition, and the model permits contradictory
-state.
+**Root cause:** availability is a label on the item, not a rule enforced by `Library`.
 
-**Why it matters:** Two members can believe they hold the same book while the report names
-only the second. Staff cannot tell who actually has it. This is a silent inventory error,
-not a visible failure.
+**Why it matters:** two members can believe they hold the same book while the report names
+only one, so staff cannot tell who actually has it.
 
 ### 2. Returns are keyed by title, not item identity
 
-**What happens:** `returnItem` closes every active loan whose `itemTitle` matches, and it
-accepts any item — even one that was never borrowed. `Loan` stores copied `itemTitle` and
-`memberName` strings instead of references to the actual objects.
+`returnItem` closes every active loan with the same title and accepts any item, even one
+that was never borrowed. `Loan` stores copied titles and names instead of the actual objects.
 
-**Root cause:** Display text is being used as the identity of an item and a member. Titles
-are not unique in a library, and names are not unique either.
+**Root cause:** display text is used as identity, but titles and names are not unique.
 
-**Why it matters:** Two copies of the same title are indistinguishable. Returning one copy
-can close another member's loan while the item is still physically out. Renaming an item
-after lending breaks the link permanently, leaving a loan active forever.
+**Why it matters:** returning one copy can close another member's loan, and renaming an item
+breaks the link permanently.
 
 ### 3. The model has two competing sources of truth
 
-**What happens:** An item's custody lives in both `LendingItem.status`/`currentBorrower`
-and `Loan.status`. `returnItem` updates both without checking them against each other, and
-callers can change one without the other.
+Custody is stored on both the item (`status`, `currentBorrower`) and the loan (`status`), and
+the two can be changed separately.
 
-**Root cause:** There is no aggregate boundary or single owner of the loan lifecycle, so
-the same fact is stored twice.
+**Root cause:** no single owner of the loan lifecycle.
 
-**Why it matters:** The report can show an item `ON_LOAN` with zero active loans, or an
-active loan for an item marked `AVAILABLE`. The end-of-day report is the business's
-reconciliation tool; once it can contradict itself, staff cannot trust it.
+**Why it matters:** the report can show an item on loan with no active loan, or available
+with an active loan. Staff cannot trust the end-of-day report.
 
-### 4. State is publicly mutable and internal collections escape
+### 4. State is publicly mutable
 
-**What happens:** Every entity field is `public`. `Library.items` and `Library.members` are
-public lists, `getLoans()` returns the live internal list, and ID counters are public
-statics. A caller can clear all loans while items remain marked on loan, or change an ID
-sequence with one assignment.
+All entity fields are public, `items` and `members` are public lists, `getLoans()` returns the
+live internal list, and ID counters are public statics.
 
-**Root cause:** No encapsulation. The domain has no boundary between "what a volunteer may
-change" and "what keeps the records valid".
+**Root cause:** no encapsulation between callers and the records.
 
-**Why it matters:** A well-meaning extension can corrupt the records by accident, and
-tests interfere with each other through shared static state. This is the structural reason
-the code is unsafe to change.
+**Why it matters:** any caller can corrupt records by accident, and tests interfere with each
+other through shared static state.
 
 ### 5. Invalid data is accepted, and failures are not atomic
 
-**What happens:** `type`, `kind`, and `status` are raw strings. An unknown item type creates
-a 0-day *active* loan while leaving the item `AVAILABLE`. A null title is accepted, then
-poisons every later return with a `NullPointerException`. If `member.history` is null,
-`borrow` marks the item on loan and then throws, leaving it on loan with no loan record.
+Types, kinds, and statuses are raw strings. An unknown item type creates a 0-day active loan;
+a null title later crashes returns; a null history leaves an item on loan with no loan record.
 
-**Root cause:** No closed value sets or validation, and state is mutated before all failure
-points have been passed.
+**Root cause:** no validation or closed value sets, and state changes before all checks pass.
 
-**Why it matters:** One bad record can block unrelated operations and silently corrupt the
-inventory. Volunteers get raw exceptions instead of clear refusals, and the damage is
-already written by the time the error appears.
+**Why it matters:** one bad record can block unrelated operations and silently corrupt the
+inventory, with the error appearing only after the damage is written.
 
 ## Most dangerous for this business
 
