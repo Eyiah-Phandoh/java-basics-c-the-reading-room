@@ -193,20 +193,32 @@ classDiagram
 Proposed package layout:
 
 ```text
-src/main/java/
-  LendingTracker.java                  (thin entry point, keeps the current run command)
-  com/amalitech/training/readingroom/
-    Library.java
-    LendingItem.java
-    Member.java
-    Loan.java
-    ItemType.java
-    MemberKind.java
-    LoanStatus.java
-    LoanPolicy.java
-    ReportPrinter.java
-src/test/java/
-  com/amalitech/training/readingroom/  (domain and report tests)
+src/
+├── main/
+│   └── java/
+│       ├── LendingTracker.java
+│       └── com/
+│           └── amalitech/
+│               └── training/
+│                   └── readingroom/
+│                       ├── Library.java
+│                       ├── LendingItem.java
+│                       ├── Member.java
+│                       ├── Loan.java
+│                       ├── ItemType.java
+│                       ├── MemberKind.java
+│                       ├── LoanStatus.java
+│                       ├── LoanPolicy.java
+│                       └── ReportPrinter.java
+│
+└── test/
+    └── java/
+        └── com/
+            └── amalitech/
+                └── training/
+                    └── readingroom/
+                        ├── (domain tests)
+                        └── (report tests)
 ```
 
 ## Behaviour that must not change
