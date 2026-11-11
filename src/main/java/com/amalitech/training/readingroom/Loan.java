@@ -6,15 +6,15 @@ package com.amalitech.training.readingroom;
 public final class Loan {
 
     private final int id;
-    private final String memberName;
-    private final String itemTitle;
+    private final Member member;
+    private final LendingItem item;
     private final int loanDays;
     private String status = "ACTIVE";
 
-    Loan(int id, String memberName, String itemTitle, int loanDays) {
+    Loan(int id, Member member, LendingItem item, int loanDays) {
         this.id = id;
-        this.memberName = memberName;
-        this.itemTitle = itemTitle;
+        this.member = member;
+        this.item = item;
         this.loanDays = loanDays;
     }
 
@@ -22,12 +22,12 @@ public final class Loan {
         return id;
     }
 
-    public String memberName() {
-        return memberName;
+    public Member member() {
+        return member;
     }
 
-    public String itemTitle() {
-        return itemTitle;
+    public LendingItem item() {
+        return item;
     }
 
     public int loanDays() {

@@ -66,14 +66,15 @@ public final class Library {
             item.markOnLoan(member.name());
             out.println("Lent \"" + item.title() + "\" to " + member.name() + " for " + loanDays + " days");
         }
-        member.recordBorrow(item.title());
-        loans.add(new Loan(nextLoanId++, member.name(), item.title(), loanDays));
+        Loan loan = new Loan(nextLoanId++, member, item, loanDays);
+        member.recordBorrow(loan);
+        loans.add(loan);
     }
 
     public void returnItem(LendingItem item) {
         item.markAvailable();
         for (Loan loan : loans) {
-            if (loan.itemTitle().equals(item.title()) && loan.isActive()) {
+            if (loan.item() == item && loan.isActive()) {
                 loan.markReturned();
             }
         }
@@ -103,7 +104,7 @@ public final class Library {
         out.println("Active loans:");
         for (Loan loan : loans) {
             if (loan.isActive()) {
-                out.println("  Loan #" + loan.id() + ": \"" + loan.itemTitle() + "\" -> " + loan.memberName());
+                out.println("  Loan #" + loan.id() + ": \"" + loan.item().title() + "\" -> " + loan.member().name());
             }
         }
     }

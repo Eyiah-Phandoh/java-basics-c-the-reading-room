@@ -11,7 +11,7 @@ public final class Member {
     private final int id;
     private final String name;
     private final String kind;
-    private final List<String> history = new ArrayList<>();
+    private final List<Loan> history = new ArrayList<>();
 
     Member(int id, String name, String kind) {
         this.id = id;
@@ -31,11 +31,11 @@ public final class Member {
         return kind;
     }
 
-    public List<String> history() {
+    public List<Loan> history() {
         return List.copyOf(history);
     }
 
-    void recordBorrow(String itemTitle) {
-        history.add("Borrowed " + itemTitle);
+    void recordBorrow(Loan loan) {
+        history.add(loan);
     }
 }
