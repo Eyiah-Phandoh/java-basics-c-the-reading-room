@@ -26,7 +26,7 @@ java -jar target/the-reading-room.jar
 Or use the JDK directly:
 
 ```bash
-javac -d target/classes $(find src/main/java -name '*.java')
+javac -sourcepath src/main/java -d target/classes src/main/java/LendingTracker.java
 java -cp target/classes LendingTracker
 ```
 
