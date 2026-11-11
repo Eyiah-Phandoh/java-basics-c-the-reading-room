@@ -209,5 +209,3 @@ src/
 - Successful messages, report layout, item/loan ordering, and loan numbering.
 - The only intended change: the demo's second borrow of *Things Fall Apart* is refused,
   so the report shows the novel with Kofi rather than Ama.
-
-No new features (due dates, fines, persistence, concurrency) are part of this rebuild.
