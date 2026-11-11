@@ -63,15 +63,21 @@ class OverdueTest {
     }
 
     @Test
-    void printsOverdueReportWithDaysLate() {
+    void printsTheOverdueSectionAsPartOfTheEndOfDayReport() {
         LendingItem book = library.addItem("Things Fall Apart", ItemType.BOOK);
         Member member = library.addMember("Kofi Mensah", MemberKind.STANDARD);
         library.borrow(member, book);
 
-        String output = overdueReport(LocalDate.of(2026, 1, 17));
+        String output = report(LocalDate.of(2026, 1, 17));
 
         String nl = System.lineSeparator();
         String expected = nl
+                + "=== The Reading Room - end of day ===" + nl
+                + "Items:" + nl
+                + "  \"Things Fall Apart\" (BOOK): ON_LOAN - with Kofi Mensah" + nl
+                + "Active loans:" + nl
+                + "  Loan #1: \"Things Fall Apart\" -> Kofi Mensah" + nl
+                + nl
                 + "=== The Reading Room - overdue items (as of 2026-01-17) ===" + nl
                 + "  Loan #1: \"Things Fall Apart\" -> Kofi Mensah (due 2026-01-15, 2 days overdue)" + nl;
         assertEquals(expected, output);
@@ -83,18 +89,24 @@ class OverdueTest {
         Member member = library.addMember("Kofi Mensah", MemberKind.STANDARD);
         library.borrow(member, book);
 
-        String output = overdueReport(LocalDate.of(2026, 1, 10));
+        String output = report(LocalDate.of(2026, 1, 10));
 
         String nl = System.lineSeparator();
         String expected = nl
+                + "=== The Reading Room - end of day ===" + nl
+                + "Items:" + nl
+                + "  \"Things Fall Apart\" (BOOK): ON_LOAN - with Kofi Mensah" + nl
+                + "Active loans:" + nl
+                + "  Loan #1: \"Things Fall Apart\" -> Kofi Mensah" + nl
+                + nl
                 + "=== The Reading Room - overdue items (as of 2026-01-10) ===" + nl
                 + "No overdue loans." + nl;
         assertEquals(expected, output);
     }
 
-    private String overdueReport(LocalDate asOf) {
+    private String report(LocalDate asOf) {
         ByteArrayOutputStream report = new ByteArrayOutputStream();
-        new ReportPrinter().printOverdue(library, asOf,
+        new ReportPrinter().print(library, asOf,
                 new PrintStream(report, true, StandardCharsets.UTF_8));
         return report.toString(StandardCharsets.UTF_8);
     }

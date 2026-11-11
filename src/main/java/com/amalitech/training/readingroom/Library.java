@@ -139,15 +139,16 @@ public final class Library {
         return List.copyOf(loans);
     }
 
-    public void printReport() {
-        reportPrinter.print(this, out);
+    /**
+     * The library's current date. Exposed so reports can date themselves from the same clock
+     * the loans used.
+     */
+    public LocalDate today() {
+        return LocalDate.now(clock);
     }
 
-    /**
-     * Prints the optional overdue report as of the library's current date.
-     */
-    public void printOverdueReport() {
-        reportPrinter.printOverdue(this, LocalDate.now(clock), out);
+    public void printReport() {
+        reportPrinter.print(this, out);
     }
 
     private void requireRegisteredMember(Member member) {

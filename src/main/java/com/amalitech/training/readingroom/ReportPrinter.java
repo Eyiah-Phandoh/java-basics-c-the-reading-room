@@ -10,7 +10,19 @@ import java.util.List;
  */
 public final class ReportPrinter {
 
+    /**
+     * Prints the full end-of-day report, including the overdue section as of the library's
+     * current date.
+     */
     public void print(Library library, PrintStream out) {
+        print(library, library.today(), out);
+    }
+
+    /**
+     * Prints the full end-of-day report as of {@code asOf}. The date is a parameter so tests
+     * can pin the overdue section without depending on the wall clock.
+     */
+    public void print(Library library, LocalDate asOf, PrintStream out) {
         out.println();
         out.println("=== " + library.name() + " - end of day ===");
         out.println("Items:");
@@ -26,12 +38,10 @@ public final class ReportPrinter {
                 out.println("  Loan #" + loan.id() + ": \"" + loan.item().title() + "\" -> " + loan.member().name());
             }
         }
+        printOverdueSection(library, asOf, out);
     }
 
-    /**
-     * Prints the optional overdue section without changing the regular end-of-day report.
-     */
-    public void printOverdue(Library library, LocalDate asOf, PrintStream out) {
+    private void printOverdueSection(Library library, LocalDate asOf, PrintStream out) {
         List<Loan> overdue = library.overdueLoans(asOf);
         out.println();
         out.println("=== " + library.name() + " - overdue items (as of " + asOf + ") ===");
