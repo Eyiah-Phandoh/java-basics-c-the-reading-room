@@ -1,8 +1,9 @@
 # The Reading Room — Community Library Lending Tracker
 
 A rebuilt version of the community library lending tracker. It preserves the original loan
-periods, console messages, ordering, and end-of-day report, while enforcing the rule the
-business depends on: **a physical item can only be on one loan at a time**.
+periods, console messages, and ordering, while enforcing the rule the business depends on:
+**a physical item can only be on one loan at a time**. The end-of-day report keeps its
+existing sections and adds an overdue section at the end.
 
 The defects found in the starter and the reasoning behind the new structure are recorded in
 [`DIAGNOSIS.md`](DIAGNOSIS.md).
@@ -44,10 +45,14 @@ Items:
   "French Audio Course" (AUDIO_KIT): AVAILABLE
 Active loans:
   Loan #1: "Things Fall Apart" -> Kofi Mensah
+
+=== The Reading Room - overdue items (as of 2026-11-11) ===
+No overdue loans.
 ```
 
 The demo's last action is deliberately invalid. It used to create a second active loan for
-the same novel. It is now refused, and the report correctly keeps the novel with Kofi.
+the same novel. It is now refused, and the report correctly keeps the novel with Kofi. The
+overdue section is part of every report; the demo borrows today, so nothing is late.
 
 ## Tests
 
@@ -70,7 +75,7 @@ overdue calculations, and the exact report formats.
 | `Loan` | A loan linking a member and an item, with its period, status, borrow date, and due date. |
 | `ItemType`, `MemberKind`, `LoanStatus` | Closed value sets replacing raw strings. |
 | `LoanPolicy` | The four loan-period rules in one place. |
-| `ReportPrinter` | Renders the end-of-day and optional overdue reports from library state. |
+| `ReportPrinter` | Renders the full end-of-day report, including overdue items. |
 | `*Exception` | Clear refusals for unavailable items, invalid returns, and foreign entities. |
 
 Design rules that keep it safe to change:
@@ -159,22 +164,18 @@ The brief only requires loan periods; it does not ask the tracker to know which 
 late. That is the one substantive extra I added.
 
 Every `Loan` now records `borrowedOn` and derives `dueDate` from the agreed loan period.
-`Library.overdueLoans(asOf)` returns the active loans past that date, and running with
-`--overdue` prints a separate section:
-
-```bash
-./mvnw exec:java -Dexec.args="--overdue"
-```
-
-Illustrative output for a book due on 15 January:
+`Library.overdueLoans(asOf)` returns the active loans past that date, and `ReportPrinter`
+always ends the standard end-of-day report with an overdue section dated from the library's
+clock:
 
 ```text
 === The Reading Room - overdue items (as of 2026-01-17) ===
   Loan #1: "Things Fall Apart" -> Kofi Mensah (due 2026-01-15, 2 days overdue)
 ```
 
-The normal end-of-day report and its output are unchanged; the extra section is opt-in. The
-demo borrows on the current day, so its overdue section correctly says `No overdue loans.`
+There is no flag to remember and no second report to run: the overdue answer arrives with
+the report staff already read at closing time. When nothing is late the section says
+`No overdue loans.`
 
 **Why it is worth adding:** the original stored only `loanDays`, an integer duration. It
 could not answer the question staff actually ask at the desk — "which items are late today?"
@@ -184,8 +185,8 @@ that date as part of the loan, so the answer is available whenever it is needed.
 **Why the implementation is safe:** `Library` takes an injected `Clock`, so due-date logic
 is tested deterministically instead of depending on the wall clock. The overdue query is a
 read-only projection of the same active loans, so it cannot drift from custody. The overdue
-view is a separate method on `ReportPrinter`, so the console format did not leak into the
-lending aggregate.
+section is rendered by `ReportPrinter` from that query, so the console format stays out of
+the lending aggregate.
 
 **For the next person:** fines, reminders, or a "due this week" view can be built on
 `Loan.dueDate()` and `Library.overdueLoans(...)` without changing the lending rules. A new

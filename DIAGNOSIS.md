@@ -5,8 +5,9 @@
 The tracker works on the happy path, but its model does not enforce the one rule the
 library depends on: a physical item is either available or on exactly one loan. State is
 duplicated, publicly mutable, and keyed by display strings, so invalid records are easy to
-create and hard to notice. The rebuild keeps today's loan rules, messages, and report
-format, and makes that invariant structural.
+create and hard to notice. The rebuild keeps today's loan rules and messages, preserves the
+report's existing sections, and makes that invariant structural. One documented improvement
+appends an overdue section to the end-of-day report.
 
 ## Critical defects
 
@@ -206,6 +207,8 @@ src/
 
 - BOOK loans: 14 days standard, 28 days student.
 - AUDIO_KIT loans: 7 days standard, 14 days student.
-- Successful messages, report layout, item/loan ordering, and loan numbering.
-- The only intended change: the demo's second borrow of *Things Fall Apart* is refused,
-  so the report shows the novel with Kofi rather than Ama.
+- Successful messages, the report's existing sections and layout, item/loan ordering, and
+  loan numbering.
+- The only intended changes: the demo's second borrow of *Things Fall Apart* is refused, so
+  the report shows the novel with Kofi rather than Ama; and an overdue section is appended
+  to the standard report.
