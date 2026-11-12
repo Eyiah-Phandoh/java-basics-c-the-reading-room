@@ -72,7 +72,7 @@ public final class Library {
      *
      * @throws UnregisteredMemberException if the member does not belong to this library
      * @throws UnregisteredItemException if the item does not belong to this library
-     * @throws ItemUnavailableException if the item already has an active loan
+     * @throws ItemUnavailableException already held by as many members as the policy allows
      */
     public void borrow(Member member, LendingItem item) {
         borrow(member, item, LocalDate.now(clock));

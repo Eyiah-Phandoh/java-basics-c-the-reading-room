@@ -2,7 +2,7 @@
 
 A rebuilt version of the community library lending tracker. It preserves the original loan
 periods, console messages, and ordering, while enforcing the rule the business depends on:
-**a physical item can only be on one loan at a time**. TThe end-of-day report keeps its existing sections. An optional overdue section is added
+**a physical item can only be on one loan at a time**. The end-of-day report keeps its existing sections. An optional overdue section is added
 when the tracker is run with `showOverdue=true`.
 
 The defects found in the starter and the reasoning behind the new structure are recorded in

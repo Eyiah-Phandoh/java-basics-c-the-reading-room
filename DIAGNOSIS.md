@@ -124,7 +124,6 @@ classDiagram
         +printReport()
         +returnItem(Member, LendingItem)
         +activeLoansFor(LendingItem) List~Loan~
-        +activeLoansFor()
     }
 
     class LendingItem {
