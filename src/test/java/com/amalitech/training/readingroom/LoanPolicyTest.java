@@ -2,6 +2,7 @@ package com.amalitech.training.readingroom;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -33,5 +34,13 @@ class LoanPolicyTest {
     void rejectsMissingValues() {
         assertThrows(NullPointerException.class, () -> policy.daysFor(null, MemberKind.STANDARD));
         assertThrows(NullPointerException.class, () -> policy.daysFor(ItemType.BOOK, null));
+    }
+    @Test
+    void everyItemTypeAndMemberKindHasAPositiveLoanPeriod() {
+        for (ItemType type : ItemType.values()) {
+            for (MemberKind kind : MemberKind.values()) {
+                assertTrue(policy.daysFor(type, kind) > 0, type + " / " + kind);
+            }
+        }
     }
 }
