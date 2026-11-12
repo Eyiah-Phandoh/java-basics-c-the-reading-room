@@ -46,7 +46,7 @@ Items:
 Active loans:
   Loan #1: "Things Fall Apart" -> Kofi Mensah
 
-=== The Reading Room - overdue items (as of 2026-11-11(yesterday)) ===
+=== The Reading Room - overdue items (as of 2026-11-11(current date)) ===
 No overdue loans.
 ```
 
