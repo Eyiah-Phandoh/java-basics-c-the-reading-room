@@ -202,12 +202,3 @@ the lending aggregate.
 item type automatically inherits due-date support because the period still comes from
 `LoanPolicy`.
 
-## Other extension points
-
-- **New report section:** change `ReportPrinter` only; domain rules are untouched.
-- **New lending rule:** keep it inside `Library` (or a small policy type) and cover it with
-  a test.
-- **New storage or UI:** add it around `Library`; the domain does not depend on the console.
-
-Out of scope for this rebuild: persistence, fines, renewals, concurrency, and borrowing
-limits. The current program is intentionally an in-memory, single-run tracker.
