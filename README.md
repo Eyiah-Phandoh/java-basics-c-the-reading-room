@@ -46,8 +46,11 @@ Items:
 Active loans:
   Loan #1: "Things Fall Apart" -> Kofi Mensah
 
-=== The Reading Room - overdue items (as of 2026-11-11(current date)) ===
+“Running with overdue tracking” using showOverdue=true.
+=== The Reading Room - overdue items (as of 2026-11-11) ===
 No overdue loans.
+
+Note: Date is whatever today is when you run it.
 ```
 
 The demo's last action is deliberately invalid. It used to create a second active loan for
@@ -75,7 +78,7 @@ overdue calculations, and the exact report formats.
 | `Loan` | A loan linking a member and an item, with its period, status, borrow date, and due date. |
 | `ItemType`, `MemberKind`, `LoanStatus` | Closed value sets replacing raw strings. |
 | `LoanPolicy` | The loan-period rules in one place. |
-| `ReportPrinter` | Renders the full end-of-day report, including overdue items. |
+| `ReportPrinter` | Renders the end-of-day report, with an optional overdue section. |
 | `*Exception` | Clear refusals for unavailable items, invalid returns, and foreign entities. |
 
 Design rules that keep it safe to change:
@@ -174,7 +177,7 @@ late. That is the one substantive extra I added.
 
 Every `Loan` now records `borrowedOn` and derives `dueDate` from the agreed loan period.
 `Library.overdueLoans(asOf)` returns the active loans past that date, and `ReportPrinter`
-always ends the standard end-of-day report with an overdue section dated from the library's
+the overdue section is shown only when showOverdue=true is passed, dated from the library's
 clock:
 
 ```text
@@ -186,10 +189,12 @@ There is no flag to remember and no second report to run: the overdue answer arr
 the report staff already read at closing time. When nothing is late the section says
 `No overdue loans.`
 
-**Why it is worth adding:** the original stored only `loanDays`, an integer duration. It
-could not answer the question staff actually ask at the desk — "which items are late today?"
-— without someone re-keying borrow dates into a separate spreadsheet. The tracker now keeps
-that date as part of the loan, so the answer is available whenever it is needed.
+**Why it is worth adding:** the original stored only `loanDays`, so it could not say when
+anything was due. The model now records `borrowedOn` and derives `dueDate`. Staff can back-date
+a loan when entering an existing one, and `--overdue` lists what is late. For e-loans, due dates
+are the natural basis for automatic expiry.
+
+**Limits today:** the tracker is in-memory and single-run. Persistence is the next step.
 
 **Why the implementation is safe:** `Library` takes an injected `Clock`, so due-date logic
 is tested deterministically instead of depending on the wall clock. The overdue query is a
