@@ -46,7 +46,7 @@ Items:
 Active loans:
   Loan #1: "Things Fall Apart" -> Kofi Mensah
 
-=== The Reading Room - overdue items (as of 2026-11-11) ===
+=== The Reading Room - overdue items (as of 2026-11-11(yesterday)) ===
 No overdue loans.
 ```
 
@@ -74,7 +74,7 @@ overdue calculations, and the exact report formats.
 | `Member` | A member identity, kind, and read-only loan history. |
 | `Loan` | A loan linking a member and an item, with its period, status, borrow date, and due date. |
 | `ItemType`, `MemberKind`, `LoanStatus` | Closed value sets replacing raw strings. |
-| `LoanPolicy` | The four loan-period rules in one place. |
+| `LoanPolicy` | The loan-period rules in one place. |
 | `ReportPrinter` | Renders the full end-of-day report, including overdue items. |
 | `*Exception` | Clear refusals for unavailable items, invalid returns, and foreign entities. |
 
@@ -102,9 +102,9 @@ make identity explicit and make a return affect exactly one loan.
 
 **Enums and a `LoanPolicy` instead of strings and nested `if`s.** Strings made typos
 possible and allowed an unknown type to create a zero-day loan. The enums are closed, and
-the policy holds all four periods in one place. A new type still requires a code change, but
+the policy holds every period in one place. A new type still requires a code change, but
 the compiler refuses to build until its rule is supplied; a data-driven rule table would be
-more machinery than four rules warrant.
+more machinery than the current rules warrant.
 
 **Validate first, mutate second.** Every check runs before the library changes anything, so
 a refused borrow or return leaves the records exactly as they were. The cost is that callers
@@ -126,23 +126,31 @@ class and an injected `PrintStream`.
 quantity field would be a different model and would change how the report is read; it is
 deliberately out of scope.
 
-## The change that is coming
+## The change that is coming: e-loans
 
-The brief's next change is a new item type (a new member kind follows the same route).
+Before long, the library plans to add **e-loans**: digital items with their own borrowing
+rules. They do not want that change to force a rewrite, and nobody there has an opinion on
+how the classes are organized. What they care about is that the tracker stays correct and can
+grow to a new kind of item.
 
-In the rebuilt version, adding it is three deliberate steps:
+In the rebuilt version, adding e-loans is a contained change:
 
 1. Add the constant to `ItemType`.
-2. Add its loan period to `LoanPolicy`. The nested `switch` is exhaustive, so the project
-   will not compile until the new rule exists.
-3. Add the period to `LoanPolicyTest`.
+2. Add its borrowing rule to `LoanPolicy`. The nested `switch` is exhaustive, so the project
+   will not build until the new type has a rule.
+3. Add the rule to `LoanPolicyTest`.
 
-Nothing else needs to change. `Library` asks the policy for the number of days and never
-branches on type. `Loan`, `Member`, and `ReportPrinter` use the enum generically, so the
-report shows the new type automatically. A new member kind is the same: one enum constant,
-one policy case, one test.
+`Library` asks `LoanPolicy` for the period and never branches on item type. `Loan`, `Member`,
+and `ReportPrinter` treat every type the same, so the new type appears in the report without
+further edits.
 
-The old version forced changes in several places:
+If e-loans also need a different **availability** rule — for example, several members may
+hold the same digital title at once — that decision lives in one place: `Library`, which owns
+the active-loan map. It is a deliberate policy change in one class, not a rewrite spread
+across the model, and the existing rule that a physical item is on at most one loan stays
+intact.
+
+The old version would have forced changes in several places:
 
 - `LendingItem`'s allowed-values comment and constructor data;
 - a new copy of the `if/else` block in `Library.borrow`, including its separate student-rate
@@ -150,13 +158,14 @@ The old version forced changes in several places:
 - the demo setup;
 - and there was no compiler check or test to catch a mistake.
 
-A typo in the type string produced an active loan with 0 days while leaving the item
-`AVAILABLE`; a forgotten student branch silently used the standard period. Adding a member
-kind was worse: both the `BOOK` and `AUDIO_KIT` branches in `Library.borrow` needed editing.
+A typo in the old type string produced an active loan with 0 days while leaving the item
+`AVAILABLE`; a forgotten student branch silently used the standard period. Adding a kind of
+item also meant working out which of the scattered status fields to update, with nothing to
+warn you if you missed one.
 
-The rebuild does not remove the need to decide the new period. It makes the compiler and
-tests point at that one decision, and keeps `Library`, the entities, and the report from
-drifting while it is made.
+The rebuild does not remove the need to decide what an e-loan's rules are. It puts that
+decision in `ItemType` and `LoanPolicy`, lets the compiler and tests point at it, and keeps
+`Library`, the entities, and the report from drifting while it is made.
 
 ## Improvement beyond the brief: overdue tracking
 
