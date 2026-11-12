@@ -9,6 +9,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -150,6 +152,37 @@ class LibraryTest {
         assertThrows(NullPointerException.class, () -> library.borrow(member, null));
         assertThrows(NullPointerException.class, () -> library.returnItem(null));
         assertThrows(IllegalArgumentException.class, () -> new Library("  "));
+    }
+
+    @Test
+    void aPolicyThatAllowsSeveralHoldersLetsThemShareAnItem() {
+        LoanPolicy shared = new LoanPolicy() {
+            @Override
+            public int maxConcurrentLoans(ItemType type) {
+                return 2;
+            }
+        };
+        Library lib = new Library("L", shared,
+                new PrintStream(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8),
+                Clock.systemDefaultZone());
+        LendingItem ebook = lib.addItem("Digital Title", ItemType.BOOK);
+        Member a = lib.addMember("A", MemberKind.STANDARD);
+        Member b = lib.addMember("B", MemberKind.STANDARD);
+        Member c = lib.addMember("C", MemberKind.STANDARD);
+
+        lib.borrow(a, ebook);
+        lib.borrow(b, ebook);
+        assertThrows(ItemUnavailableException.class, () -> lib.borrow(c, ebook));
+        assertThrows(IllegalStateException.class, () -> lib.returnItem(ebook));
+
+        ByteArrayOutputStream report = new ByteArrayOutputStream();
+        new ReportPrinter().print(lib, new PrintStream(report, true, StandardCharsets.UTF_8));
+        assertTrue(report.toString(StandardCharsets.UTF_8)
+                .contains("\"Digital Title\" (BOOK): ON_LOAN - with A, B"));
+
+        lib.returnItem(a, ebook);
+        assertEquals(1, lib.activeLoansFor(ebook).size());
+        assertSame(b, lib.activeLoanFor(ebook).orElseThrow().member());
     }
 
     @Test
