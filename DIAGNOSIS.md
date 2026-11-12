@@ -93,6 +93,17 @@ Defect 4 is what makes this easy to do, but defect 1 is the direct business harm
 why the rebuild makes exclusivity structural rather than a check that a future volunteer
 must remember to add.
 
+### How the rest rank
+
+1. **Defects 1, 3 and 4 share one root cause**: duplicated, unprotected state. Fixing the
+   ownership of custody fixes all three at once.
+2. **Defect 2** (identity by title) is next: it silently closes the wrong loan.
+3. **Defect 6** (the copy-pasted rule) is the main risk for the coming e-loans change.
+4. **Defect 5** (invalid data) is serious but visible: the damage shows up as errors.
+5. **Defect 7** (printing inside the domain) is a design cost, not a data risk. I kept the
+   console messages in `Library` deliberately so the output matches the original exactly;
+   the tests capture them through an injected `PrintStream`.
+
 ## Planned structure
 
 ```mermaid
@@ -105,12 +116,14 @@ classDiagram
         -List~LendingItem~ items
         -List~Member~ members
         -List~Loan~ loans
-        -Map~LendingItem,Loan~ activeLoans
+        -Map~LendingItem,List~Loan~~ activeLoans
         +addItem(String, ItemType) LendingItem
         +addMember(String, MemberKind) Member
         +borrow(Member, LendingItem) void
         +returnItem(LendingItem)
         +printReport()
+        +returnItem(Member, LendingItem)
+        +activeLoansFor(LendingItem) List~Loan~
         +activeLoansFor()
     }
 
@@ -155,6 +168,7 @@ classDiagram
 
     class LoanPolicy {
         +daysFor(ItemType, MemberKind) int
+        +maxConcurrentLoans(ItemType) int
     }
 
     class ReportPrinter {
@@ -241,5 +255,8 @@ before any change. The rebuilt tracker matches it except where noted below.
 | `Member.history` is `List<String>` ("Borrowed X") | `List<Loan>` | Strings could not be traced to a loan |
 | `new LendingItem(...)` then `lib.addItem(item)` | `lib.addItem(title, type)` | The library owns IDs and registration |
 | `getLoans()` | `loans()` (read-only copy) | Encapsulation |
+
+New API: `borrow(member, item, date)`, `returnItem(member, item)`, `activeLoansFor(item)`,
+and `LoanPolicy.maxConcurrentLoans(type)`.
 
 Added (opt-in, off by default): due dates and an overdue section.
