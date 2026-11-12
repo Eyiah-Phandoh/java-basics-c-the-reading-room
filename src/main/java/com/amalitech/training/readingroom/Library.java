@@ -20,7 +20,7 @@ public final class Library {
     private final List<LendingItem> items = new ArrayList<>();
     private final List<Member> members = new ArrayList<>();
     private final List<Loan> loans = new ArrayList<>();
-    private final Map<LendingItem, Loan> activeLoans = new IdentityHashMap<>();
+    private final Map<LendingItem, List<Loan>> activeLoans = new IdentityHashMap<>();
     private final LoanPolicy loanPolicy;
     private final PrintStream out;
     private final Clock clock;
@@ -75,25 +75,33 @@ public final class Library {
      * @throws ItemUnavailableException if the item already has an active loan
      */
     public void borrow(Member member, LendingItem item) {
+        borrow(member, item, LocalDate.now(clock));
+    }
+
+    public void borrow(Member member, LendingItem item, LocalDate borrowedOn) {
         Objects.requireNonNull(member, "member must not be null");
         Objects.requireNonNull(item, "item must not be null");
+        Objects.requireNonNull(borrowedOn, "borrowedOn must not be null");
+
         requireRegisteredMember(member);
         requireRegisteredItem(item);
 
-        Loan existingLoan = activeLoans.get(item);
-        if (existingLoan != null) {
-            throw new ItemUnavailableException(item.title(), existingLoan.member().name());
+        List<Loan> active = activeLoans.getOrDefault(item, List.of());
+        if (active.size() >= loanPolicy.maxConcurrentLoans(item.type())) {
+            throw new ItemUnavailableException(item.title(), active.get(0).member().name());
         }
 
         int loanDays = loanPolicy.daysFor(item.type(), member.kind());
-        Loan loan = new Loan(nextLoanId++, member, item, loanDays, LocalDate.now(clock));
+        Loan loan = new Loan(nextLoanId++, member, item, loanDays, borrowedOn);
 
         loans.add(loan);
         member.recordBorrow(loan);
-        activeLoans.put(item, loan);
+        activeLoans.computeIfAbsent(item, k -> new ArrayList<>()).add(loan);
 
         out.println("Lent \"" + item.title() + "\" to " + member.name() + " for " + loanDays + " days");
     }
+
+
 
     /**
      * Returns an item and closes its active loan.
@@ -104,21 +112,45 @@ public final class Library {
     public void returnItem(LendingItem item) {
         Objects.requireNonNull(item, "item must not be null");
         requireRegisteredItem(item);
-
-        Loan loan = activeLoans.get(item);
-        if (loan == null) {
+        List<Loan> active = activeLoans.getOrDefault(item, List.of());
+        if (active.isEmpty()) {
             throw new ItemNotOnLoanException(item.title());
         }
+        if (active.size() > 1) {
+            throw new IllegalStateException(
+                    "\"" + item.title() + "\" has several active loans; use returnItem(member, item)");
+        }
+        closeLoan(item, active.get(0));
+    }
 
+    public void returnItem(Member member, LendingItem item) {
+        Objects.requireNonNull(member, "member must not be null");
+        Objects.requireNonNull(item, "item must not be null");
+        requireRegisteredMember(member);
+        requireRegisteredItem(item);
+        Loan loan = activeLoans.getOrDefault(item, List.of()).stream()
+                .filter(l -> l.member() == member).findFirst()
+                .orElseThrow(() -> new ItemNotOnLoanException(item.title()));
+        closeLoan(item, loan);
+    }
+
+    private void closeLoan(LendingItem item, Loan loan) {
         loan.markReturned();
-        activeLoans.remove(item);
-
+        List<Loan> active = activeLoans.get(item);
+        active.remove(loan);
+        if (active.isEmpty()) {
+            activeLoans.remove(item);
+        }
         out.println("Returned \"" + item.title() + "\"");
     }
 
     public Optional<Loan> activeLoanFor(LendingItem item) {
+        return activeLoansFor(item).stream().findFirst();
+    }
+
+    public List<Loan> activeLoansFor(LendingItem item) {
         Objects.requireNonNull(item, "item must not be null");
-        return Optional.ofNullable(activeLoans.get(item));
+        return List.copyOf(activeLoans.getOrDefault(item, List.of()));
     }
 
     /**
@@ -150,7 +182,11 @@ public final class Library {
     }
 
     public void printReport() {
-        reportPrinter.print(this, out);
+        printReport(false);
+    }
+
+    public void printReport(boolean showOverdue) {
+        reportPrinter.print(this, showOverdue, out);
     }
 
     private void requireRegisteredMember(Member member) {
