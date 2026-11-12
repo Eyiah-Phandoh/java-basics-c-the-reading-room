@@ -22,8 +22,8 @@ public final class Loan {
             throw new IllegalArgumentException("loanDays must be positive, was " + loanDays);
         }
         this.id = id;
-        this.member = member;
-        this.item = item;
+        this.member = Objects.requireNonNull(member, "member must not be null");
+        this.item = Objects.requireNonNull(item, "item must not be null");
         this.loanDays = loanDays;
         this.borrowedOn = Objects.requireNonNull(borrowedOn, "borrowedOn must not be null");
         this.dueDate = borrowedOn.plusDays(loanDays);
