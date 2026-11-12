@@ -35,6 +35,11 @@ public class LendingTracker {
         }
 
         boolean showOverdue = Arrays.asList(args).contains("showOverdue=true");
+        if (showOverdue) {
+            // Demo only: an older loan, back-dated 30 days, so the overdue section has something to show.
+            LendingItem atlas = lib.addItem("World Atlas", ItemType.BOOK);
+            lib.borrow(kofi, atlas, lib.today().minusDays(30));
+        }
         lib.printReport(showOverdue);
     }
 }
