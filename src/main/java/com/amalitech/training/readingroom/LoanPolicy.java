@@ -6,7 +6,7 @@ import java.util.Objects;
  * The library's lending rules, kept in one place so a new item type or member kind only
  * has to be described here.
  */
-public final class LoanPolicy {
+public class LoanPolicy {
 
     public int daysFor(ItemType type, MemberKind kind) {
         Objects.requireNonNull(type, "type");
@@ -21,6 +21,13 @@ public final class LoanPolicy {
                 case STANDARD -> 7;
                 case STUDENT -> 14;
             };
+        };
+    }
+
+    public int maxConcurrentLoans(ItemType type) {
+        Objects.requireNonNull(type, "type");
+        return switch (type) {
+            case BOOK, AUDIO_KIT -> 1;   // physical: one holder at a time
         };
     }
 }
