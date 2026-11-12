@@ -33,7 +33,8 @@ class LendingTrackerTest {
         String output = runDemo("showOverdue=true");
 
         assertTrue(output.contains("=== The Reading Room - overdue items (as of "));
-        assertTrue(output.contains("No overdue loans."));
+        assertTrue(output.contains("\"World Atlas\" -> Kofi Mensah (due "));
+        assertTrue(output.contains("16 days overdue"));
     }
 
     private String runDemo(String... args) {
