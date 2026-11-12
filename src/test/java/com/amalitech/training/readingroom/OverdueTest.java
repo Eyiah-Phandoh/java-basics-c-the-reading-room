@@ -104,9 +104,22 @@ class OverdueTest {
         assertEquals(expected, output);
     }
 
+    @Test
+    void overdueSectionIsHiddenUnlessRequested() {
+        LendingItem book = library.addItem("Things Fall Apart", ItemType.BOOK);
+        Member member = library.addMember("Kofi Mensah", MemberKind.STANDARD);
+        library.borrow(member, book);
+
+        ByteArrayOutputStream report = new ByteArrayOutputStream();
+        new ReportPrinter().print(library, LocalDate.of(2026, 1, 17), false,
+                new PrintStream(report, true, StandardCharsets.UTF_8));
+
+        assertFalse(report.toString(StandardCharsets.UTF_8).contains("overdue items"));
+    }
+
     private String report(LocalDate asOf) {
         ByteArrayOutputStream report = new ByteArrayOutputStream();
-        new ReportPrinter().print(library, asOf,
+        new ReportPrinter().print(library, asOf, true,
                 new PrintStream(report, true, StandardCharsets.UTF_8));
         return report.toString(StandardCharsets.UTF_8);
     }
