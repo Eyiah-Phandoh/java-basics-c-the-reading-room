@@ -43,4 +43,13 @@ class LoanPolicyTest {
             }
         }
     }
+
+    @Test
+    void everyItemTypeAllowsAtLeastOneHolder() {
+        for (ItemType type : ItemType.values()) {
+            assertTrue(policy.maxConcurrentLoans(type) >= 1, type.toString());
+        }
+        assertEquals(1, policy.maxConcurrentLoans(ItemType.BOOK));
+        assertEquals(1, policy.maxConcurrentLoans(ItemType.AUDIO_KIT));
+    }
 }
