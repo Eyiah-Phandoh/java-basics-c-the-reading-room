@@ -3,6 +3,7 @@ package com.amalitech.training.readingroom;
 import java.io.PrintStream;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Renders the end-of-day report. Kept separate from {@link Library} so the console format
@@ -28,10 +29,11 @@ public final class ReportPrinter {
         out.println("=== " + library.name() + " - end of day ===");
         out.println("Items:");
         for (LendingItem item : library.items()) {
-            Loan activeLoan = library.activeLoanFor(item).orElse(null);
-            String status = activeLoan == null ? "AVAILABLE" : "ON_LOAN";
-            out.println("  \"" + item.title() + "\" (" + item.type() + "): " + status
-                    + (activeLoan != null ? " - with " + activeLoan.member().name() : ""));
+            List<Loan> active = library.activeLoansFor(item);
+            String holders = active.stream().map(l -> l.member().name()).collect(Collectors.joining(", "));
+            out.println("  \"" + item.title() + "\" (" + item.type() + "): "
+                    + (active.isEmpty() ? "AVAILABLE" : "ON_LOAN")
+                    + (active.isEmpty() ? "" : " - with " + holders));
         }
         out.println("Active loans:");
         for (Loan loan : library.loans()) {
