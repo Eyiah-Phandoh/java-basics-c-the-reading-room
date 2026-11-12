@@ -2,8 +2,8 @@
 
 A rebuilt version of the community library lending tracker. It preserves the original loan
 periods, console messages, and ordering, while enforcing the rule the business depends on:
-**a physical item can only be on one loan at a time**. The end-of-day report keeps its
-existing sections and adds an overdue section at the end.
+**a physical item can only be on one loan at a time**. TThe end-of-day report keeps its existing sections. An optional overdue section is added
+when the tracker is run with `showOverdue=true`.
 
 The defects found in the starter and the reasoning behind the new structure are recorded in
 [`DIAGNOSIS.md`](DIAGNOSIS.md).
@@ -45,17 +45,24 @@ Items:
   "French Audio Course" (AUDIO_KIT): AVAILABLE
 Active loans:
   Loan #1: "Things Fall Apart" -> Kofi Mensah
-
-“Running with overdue tracking” using showOverdue=true.
-=== The Reading Room - overdue items (as of 2026-11-11) ===
-No overdue loans.
-
-Note: Date is whatever today is when you run it.
 ```
 
 The demo's last action is deliberately invalid. It used to create a second active loan for
-the same novel. It is now refused, and the report correctly keeps the novel with Kofi. The
-overdue section is part of every report; the demo borrows today, so nothing is late.
+the same novel. It is now refused, and the report correctly keeps the novel with Kofi.
+
+### Running with overdue tracking
+
+```bash
+./mvnw exec:java -Dexec.args="showOverdue=true"
+```
+
+The demo then adds one extra loan, back-dated 30 days, and the report ends with the overdue
+section (dates depend on the day you run it):
+
+```text
+=== The Reading Room - overdue items (as of 2026-11-12) ===
+  Loan #3: "World Atlas" -> Kofi Mensah (due 2026-10-27, 16 days overdue)
+```
 
 ## Tests
 
@@ -131,27 +138,26 @@ deliberately out of scope.
 
 ## The change that is coming: e-loans
 
-Before long, the library plans to add **e-loans**: digital items with their own borrowing
-rules. They do not want that change to force a rewrite, and nobody there has an opinion on
-how the classes are organized. What they care about is that the tracker stays correct and can
-grow to a new kind of item.
+The library plans to add **e-loans**: digital items with their own borrowing rules. The
+tracker has to stay correct and grow to a new kind of item without a rewrite.
 
-In the rebuilt version, adding e-loans is a contained change:
+Adding e-loans is a contained change:
 
 1. Add the constant to `ItemType`.
-2. Add its borrowing rule to `LoanPolicy`. The nested `switch` is exhaustive, so the project
-   will not build until the new type has a rule.
-3. Add the rule to `LoanPolicyTest`.
+2. Add its loan periods to `LoanPolicy.daysFor`.
+3. Add how many members may hold it at once to `LoanPolicy.maxConcurrentLoans`. Physical
+   items return 1, and an e-loan can return more.
+4. Add the rules to `LoanPolicyTest`.
 
-`Library` asks `LoanPolicy` for the period and never branches on item type. `Loan`, `Member`,
-and `ReportPrinter` treat every type the same, so the new type appears in the report without
-further edits.
+Both `switch` expressions are exhaustive, so the project will not build until steps 2 and 3
+are done. `Library` never branches on item type: it asks the policy how long a loan lasts and
+how many holders are allowed. `ReportPrinter` lists every holder, and a return by one member
+closes only that member's loan.
 
-If e-loans also need a different **availability** rule — for example, several members may
-hold the same digital title at once — that decision lives in one place: `Library`, which owns
-the active-loan map. It is a deliberate policy change in one class, not a rewrite spread
-across the model, and the existing rule that a physical item is on at most one loan stays
-intact.
+`LibraryTest.aPolicyThatAllowsSeveralHoldersLetsThemShareAnItem` is the evidence. With a
+policy allowing two holders, two members share one item, a third is refused, the report shows
+both holders, and one member's return leaves the other's loan open. Physical items are
+unchanged: BOOK and AUDIO_KIT return 1, so the one-loan-at-a-time rule holds exactly as before.
 
 The old version would have forced changes in several places:
 
@@ -175,26 +181,18 @@ decision in `ItemType` and `LoanPolicy`, lets the compiler and tests point at it
 The brief only requires loan periods; it does not ask the tracker to know which loans are
 late. That is the one substantive extra I added.
 
-Every `Loan` now records `borrowedOn` and derives `dueDate` from the agreed loan period.
-`Library.overdueLoans(asOf)` returns the active loans past that date, and `ReportPrinter`
-the overdue section is shown only when showOverdue=true is passed, dated from the library's
-clock:
+Every `Loan` now records `borrowedOn` and derives `dueDate` from its loan period.
+`Library.overdueLoans(asOf)` returns the active loans past that date, and
+`Library.borrow(member, item, borrowedOn)` lets staff enter a loan that started earlier. The
+overdue section is **off by default**, so the standard report is unchanged. Run with
+`showOverdue=true` to add it (see "Running with overdue tracking" above).
 
-```text
-=== The Reading Room - overdue items (as of 2026-01-17) ===
-  Loan #1: "Things Fall Apart" -> Kofi Mensah (due 2026-01-15, 2 days overdue)
-```
+**Why it is worth adding:** the original stored only `loanDays`, so it could never say when
+anything was due. With dates in the model, the report can name late loans, and later work
+(reminders, fines, automatic expiry for e-loans) has a due date to build on.
 
-There is no flag to remember and no second report to run: the overdue answer arrives with
-the report staff already read at closing time. When nothing is late the section says
-`No overdue loans.`
-
-**Why it is worth adding:** the original stored only `loanDays`, so it could not say when
-anything was due. The model now records `borrowedOn` and derives `dueDate`. Staff can back-date
-a loan when entering an existing one, and `--overdue` lists what is late. For e-loans, due dates
-are the natural basis for automatic expiry.
-
-**Limits today:** the tracker is in-memory and single-run. Persistence is the next step.
+**Limits today:** the tracker is in-memory and single-run, so loans are lost when it exits.
+Persistence is the natural next step.
 
 **Why the implementation is safe:** `Library` takes an injected `Clock`, so due-date logic
 is tested deterministically instead of depending on the wall clock. The overdue query is a
