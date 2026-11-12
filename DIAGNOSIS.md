@@ -60,6 +60,25 @@ a null title later crashes returns; a null history leaves an item on loan with n
 **Why it matters:** one bad record can block unrelated operations and silently corrupt the
 inventory, with the error appearing only after the damage is written.
 
+### 6. The loan rule is copy-pasted, so every change is made twice (or forgotten)
+
+`borrow` repeats the same block for BOOK and AUDIO_KIT, each with its own student branch and
+status/borrower writes. 
+
+**Root cause:** a business rule expressed as nested `if`s instead of data
+in one place. 
+
+**Why it matters:** this is the main risk for the coming e-loans change. A missed
+branch silently gives the wrong loan period.
+
+### 7. Lending logic is tied to console output
+
+`borrow` and `returnItem` print directly, so rules cannot be tested or reused without capturing
+stdout. 
+
+**Root cause:** presentation inside the domain.
+
+
 ## Most dangerous for this business
 
 **Defect 1 — double lending — is the most dangerous.**
@@ -83,15 +102,16 @@ classDiagram
     }
 
     class Library {
-        -Map~int,LendingItem~ items
-        -Map~int,Member~ members
+        -List~LendingItem~ items
+        -List~Member~ members
         -List~Loan~ loans
         -Map~LendingItem,Loan~ activeLoans
         +addItem(String, ItemType) LendingItem
         +addMember(String, MemberKind) Member
-        +borrow(Member, LendingItem) Loan
+        +borrow(Member, LendingItem) void
         +returnItem(LendingItem)
         +printReport()
+        +activeLoansFor()
     }
 
     class LendingItem {
@@ -222,4 +242,4 @@ before any change. The rebuilt tracker matches it except where noted below.
 | `new LendingItem(...)` then `lib.addItem(item)` | `lib.addItem(title, type)` | The library owns IDs and registration |
 | `getLoans()` | `loans()` (read-only copy) | Encapsulation |
 
-Added: due dates and overdue.
+Added (opt-in, off by default): due dates and an overdue section.
