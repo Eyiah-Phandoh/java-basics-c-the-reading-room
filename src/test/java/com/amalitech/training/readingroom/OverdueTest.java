@@ -117,6 +117,19 @@ class OverdueTest {
         assertFalse(report.toString(StandardCharsets.UTF_8).contains("overdue items"));
     }
 
+    @Test
+    void aBackDatedLoanBecomesOverdue() {
+        LendingItem book = library.addItem("Things Fall Apart", ItemType.BOOK);
+        Member member = library.addMember("Kofi Mensah", MemberKind.STANDARD);
+
+        library.borrow(member, book, LocalDate.of(2025, 12, 1));
+
+        Loan loan = library.activeLoanFor(book).orElseThrow();
+        assertEquals(LocalDate.of(2025, 12, 15), loan.dueDate());
+        assertEquals(17, loan.daysOverdue(LocalDate.of(2026, 1, 1)));
+        assertEquals(1, library.overdueLoans(LocalDate.of(2026, 1, 1)).size());
+    }
+
     private String report(LocalDate asOf) {
         ByteArrayOutputStream report = new ByteArrayOutputStream();
         new ReportPrinter().print(library, asOf, true,
