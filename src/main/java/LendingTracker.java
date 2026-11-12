@@ -30,6 +30,8 @@ public class LendingTracker {
             lib.borrow(ama, novel); // the novel is already out with Kofi
         } catch (ItemUnavailableException e) {
             System.out.println(e.getMessage());
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
         }
 
         lib.printReport();
